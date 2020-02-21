@@ -21,3 +21,10 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+/target/
+.classpath
+.project
+/.settings/
+docker-graalvm/centos/environment-var-replacer
+docker-graalvm/ubuntu/environment-var-replacer
+docker-graalvm/alpine/environment-var-replacer

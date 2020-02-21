@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<test>
+	<file attribute="1" required="true">
+		<content>
+			Custom content!
+		</content>
+	</file>
+	<file attribute="2" required="false">
+		<dummy/>
+	</file>
+	<file attribute="Test!" required="true">
+		<dummy>
+			<content>It is optional!</content>
+		</dummy>
+	</file>
+</test>
