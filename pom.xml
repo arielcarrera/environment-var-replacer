@@ -72,8 +72,24 @@
 	          </descriptorRefs>
 	          <finalName>environment-var-replacer</finalName>
         	  <appendAssemblyId>false</appendAssemblyId>
+			  <archive>
+				<manifest>
+					<mainClass>com.github.arielcarrera.env.var.replacer.EnvVarReplacer</mainClass>
+				</manifest>
+			  </archive>
 	        </configuration>
 	      </plugin>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <configuration>
+                <archive>
+                    <manifest>
+                        <mainClass>com.github.arielcarrera.env.var.replacer.EnvVarReplacer</mainClass>
+                    </manifest>
+                </archive>
+            </configuration>
+        </plugin>
 	    </plugins>
 	</build>
 
