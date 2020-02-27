@@ -28,3 +28,4 @@ hs_err_pid*
 docker-graalvm/centos/environment-var-replacer
 docker-graalvm/ubuntu/environment-var-replacer
 docker-graalvm/alpine/environment-var-replacer
+docker-graalvm/ubuntu/environment-var-replacer-ubuntu

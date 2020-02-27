@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<test>
+	<sources>
+		<source name="java:/A" pool-name="B">
+			<url>test:test:@C:D/E</url><driver>test</driver><x1>E</x1><x2>F</x2>
+		</source>
+	</sources>
+</test>
