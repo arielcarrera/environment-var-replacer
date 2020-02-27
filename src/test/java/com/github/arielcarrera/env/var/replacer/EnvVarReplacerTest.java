@@ -113,6 +113,30 @@ public class EnvVarReplacerTest {
 		Assert.assertTrue(systemOutRule.getLog().matches("(Ok\\smatch!(\\r\\n)?){4}"));
 	}
 	
+	// file: test7-multipleinline
+	@Test
+	public void testMutipleInline() throws IOException {
+		Path template = Paths.get("test-resources/test7-multipleinline-template.xml");
+		Path file = Paths.get("test-resources/test7-multipleinline.xml");
+		Files.copy(template, file , StandardCopyOption.REPLACE_EXISTING);
+		
+		environmentVariables.set("VAR_A", "A");
+		environmentVariables.set("VAR_B", "B");
+		environmentVariables.set("VAR_C", "C");
+		environmentVariables.set("VAR_D", "D");
+		environmentVariables.set("VAR_E", "E");
+		environmentVariables.set("VAR_F", "F");
+		Assert.assertEquals("A", System.getenv("VAR_A"));
+		Assert.assertEquals("B", System.getenv("VAR_B"));
+		Assert.assertEquals("C", System.getenv("VAR_C"));
+		Assert.assertEquals("D", System.getenv("VAR_D"));
+		Assert.assertEquals("E", System.getenv("VAR_E"));
+		Assert.assertEquals("F", System.getenv("VAR_F"));
+		
+		EnvVarReplacer.main(new String[] {"test-resources/test7-multipleinline.xml"});
+		Assert.assertTrue(compareFiles(file, Paths.get("test-resources/test7-multipleinline-result.xml")));
+	}
+	
 	private boolean compareFiles(Path origin, Path target) throws IOException {
 		byte[] originContent = Files.readAllBytes(origin);
 		byte[] targetContent = Files.readAllBytes(target);

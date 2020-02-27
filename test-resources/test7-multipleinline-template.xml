@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<test>
+	<sources>
+		<source name="java:/${VAR_A}" pool-name="${VAR_B}">
+			<url>test:test:@${VAR_C}:${VAR_D}/${VAR_E}</url><driver>test</driver><x1>${VAR_E}</x1><x2>${VAR_F}</x2>
+		</source>
+	</sources>
+</test>

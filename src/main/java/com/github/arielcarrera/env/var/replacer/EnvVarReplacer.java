@@ -148,7 +148,7 @@ public class EnvVarReplacer {
 				String line = br.readLine();
 				while (line != null) {
 					Matcher matcher = pattern.matcher(line);
-					if (matcher.find()) {
+					while (matcher.find()) {
 						if (isDebugEnabled)
 							System.out.println("Ok match!");
 						String expression = matcher.group(0);
