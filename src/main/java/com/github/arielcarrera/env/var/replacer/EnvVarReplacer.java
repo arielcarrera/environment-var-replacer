@@ -39,7 +39,8 @@ public class EnvVarReplacer {
 	}
 
 	private static final Pattern pattern = Pattern
-			.compile("\\$\\{([\\w]+)(:([\\w\\s\\p{P}\\p{Sc}\\p{Sk}\\p{So}\\p{Z}]+)?)?}");
+			.compile(
+					"\\$\\{((?:(?![:])[\\w])+)(:((?:(?![:])[\\w\\s\\p{P}\\p{Sc}\\p{Sk}\\p{So}\\p{Z}])+)?)?}");
 
 	public static final int ERROR_CODE_INVALID_ARGUMENTS = 1;
 	public static final int ERROR_CODE_INVALID_PATH = 2;

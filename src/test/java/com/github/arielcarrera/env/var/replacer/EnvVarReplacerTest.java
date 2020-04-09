@@ -137,6 +137,26 @@ public class EnvVarReplacerTest {
 		Assert.assertTrue(compareFiles(file, Paths.get("test-resources/test7-multipleinline-result.xml")));
 	}
 	
+
+	//file: test8
+	@Test
+	public void testIssue7() throws IOException {
+		Path template = Paths.get("test-resources/test8-issue7-template.xml");
+		Path file = Paths.get("test-resources/test8-issue7.xml");
+		Files.copy(template, file , StandardCopyOption.REPLACE_EXISTING);
+		
+		environmentVariables.set("V_HOST", "HOST");
+		//environmentVariables.set("V_PORT", "1515");
+		environmentVariables.set("V_NAME", "NAME");
+		environmentVariables.set("V_USER", "USER");
+		environmentVariables.set("V_PASS", "PASS");
+
+		EnvVarReplacer.main(new String[] {"test-resources/test8-issue7.xml"});
+		Assert.assertTrue(compareFiles(file, Paths.get("test-resources/test8-issue7-result.xml")));
+	}
+	
+	
+	
 	private boolean compareFiles(Path origin, Path target) throws IOException {
 		byte[] originContent = Files.readAllBytes(origin);
 		byte[] targetContent = Files.readAllBytes(target);
