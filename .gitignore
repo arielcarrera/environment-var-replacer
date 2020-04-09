@@ -29,3 +29,4 @@ docker-graalvm/centos/environment-var-replacer
 docker-graalvm/ubuntu/environment-var-replacer
 docker-graalvm/alpine/environment-var-replacer
 docker-graalvm/ubuntu/environment-var-replacer-ubuntu
+docker-graalvm/centos/environment-var-replacer-centos
