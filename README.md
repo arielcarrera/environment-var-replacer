@@ -22,16 +22,24 @@ mvn clean package
 2. From project root directory:
 ```
 mvn clean package
+
 ```
-3. From docker-graalvm/centos directory: *docker-build.bat [VERSION]*
+3. From docker-graalvm/centos directory (first time only to create Centos-GraalVm image): *docker-build.bat [VERSION]*
 ```
-docker-build.bat 1.0.0
+docker-build.bat 20.0.0
 ```
 4. From docker-graalvm/centos directory: *docker-run.bat [VERSION] [PROJECT_PATH]*
 ```
-docker-run.bat 1.0.0 C:\Dev\Workspace\environment-var-replacer
+docker-run.bat 20.0.0 C:\Dev\Workspace\environment-var-replacer
 ```
-
+5. From docker-graalvm/ubuntu directory (first time only to create Ubuntu-GraalVm image): *docker-build.bat [VERSION]*
+```
+docker-build.bat 20.0.0
+```
+6. From docker-graalvm/centos directory: *docker-run.bat [VERSION] [PROJECT_PATH]*
+```
+docker-run.bat 20.0.0 C:\Dev\Workspace\environment-var-replacer
+```
 
 # Usage:
 
@@ -47,33 +55,52 @@ java -jar target\environment-var-replacer.jar target-file.xml -fb -DMY_VAR=CUSTO
 
 ## GraalVm - Native image version:
 ```
-./environment-var-replace [path-to-target-file] [-b] [-fb] [-d]
+./environment-var-replace [-s] [PATH_TO_CONFIG_FILES] [PATH_TO_TARGET_FILES] [-p [PROPERTIES_FILE]] [-b] [-fb] [-d]
 ```
-- *path-to-target-file* : Path to target file to be modified. Eg. testdir/testfile.xml
+- *-s PATH_TO_CONFIG_FILES* : flag to indicate that a source file is indicated. PATH_TO_CONFIG_FILES is a comma separated list of configuration files paths. Each line in a configuration file is a target file path to process
+- *PATH_TO_TARGET_FILES* : Path to target file to be modified. Eg. testdir/testfile.xml
+- *-p PROPERTIES_FILE* : flag to indicate that properties must to be read froma properties file. PROPERTIES_FILE is a path to a file that contains properties that will be used instead of environment variables
 - *-b* : Option to enable backup of file. It will generate a .bak file. If .bak file exists, it will exit with error.
 - *-fb* : Option to enable backup of file. It will generate a .bak file. If .bak file exists, it will override it.
 - *-d* : Option to enable debug mode. It will print some traces to console.
 
-Eg.
+## Examples
+
+
+### replace with backup
 ```
 ./environment-var-replace testdir/testfile.xml -b
 ```
 
-### multiple target files:
+### replace with different output filepath
 ```
-  ./environment-var-replace [path-to-target-file,path-to-target-file2,path-to-target-file3...] [-b] [-fb] [-d]
+./environment-var-replace testdir/testfile.xml:outputdir/outputfile.xml -b
 ```
-- *path-to-target-file,path-to-target-file2,path-to-target-file3...* : Comma separated list of paths to target files to be modified. Eg. testdir/testfile.xml,testdir/testfile2.xml
-- *-b* : Option to enable backup of file. It will generate a .bak file. If .bak file exists, it will exit with error.
-- *-fb* : Option to enable backup of file. It will generate a .bak file. If .bak file exists, it will override it.
-- *-d* : Option to enable debug mode. It will print some traces to console.
 
-Eg.
+### multiple target files with backup (force) and debug modes:
 ```
 ./environment-var-replace testdir/testfile.xml,testdir/testfile2.xml -fb -d
 ```
 
-## PUBLISH TO GITHUB PACKAGES
+### replace with configuration file
 ```
-mvn deploy -Dregistry=https://maven.pkg.github.com/arielcarrera -Dtoken=GH_TOKEN
+./environment-var-replace -s testdir/replacer.cfg
 ```
+
+replacer.cfg content:
+```
+testdir/testfile.xml
+testdir/testfile2.xml:output/outputfile2.xml
+```
+
+### replace with multiple configuration files and multiple target files combined
+```
+./environment-var-replace -s testdir/replacer.cfg testdir/testfile3.xml:outputfile3.txt,testdir/testfile4.xml
+```
+
+replacer.cfg content:
+```
+testdir/testfile.xml
+testdir/testfile2.xml:output/outputfile2.xml
+```
+
