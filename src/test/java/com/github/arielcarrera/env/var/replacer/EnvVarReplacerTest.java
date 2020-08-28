@@ -246,6 +246,18 @@ public class EnvVarReplacerTest {
 		Assert.assertTrue(compareFiles(file3, Paths.get("test-resources", "test8-issue7-result.xml")));
 	}
 	
+	@Test
+	public void testRemovePrefix() throws IOException {
+		Path template = Paths.get("test-resources", "test1-template.xml");
+		Path file = Paths.get("test-resources", "test1.xml");
+		Files.copy(template, file , StandardCopyOption.REPLACE_EXISTING);
+		environmentVariables.set("3_REQUIRED", "Test!");
+		Assert.assertEquals("Test!", System.getenv("3_REQUIRED"));
+		
+		EnvVarReplacer.main(new String[] {file.toString(), "-rp", "VAR_"});
+		Assert.assertTrue(compareFiles(file, Paths.get("test-resources", "test1-result.xml")));
+	}
+	
 	private boolean compareFiles(Path origin, Path target) throws IOException {
 		List<String> originContent = Files.readAllLines(origin);
 		List<String> targetContent = Files.readAllLines(target);
