@@ -167,6 +167,20 @@ public class EnvVarReplacerTest {
 		Assert.assertTrue(compareFiles(file, Paths.get("test-resources", "test1-result-complete.xml")));
 	}
 	
+	@Test
+	public void testTargetPath() throws IOException {
+		Path template = Paths.get("test-resources", "test1-template.xml");
+		Path file = Paths.get("test-resources", "test1.xml");
+		Path target = Paths.get("test-resources", "test1-target.xml");
+		Files.copy(template, file , StandardCopyOption.REPLACE_EXISTING);
+		Files.deleteIfExists(target);
+		
+		environmentVariables.set("VAR_3_REQUIRED", "Test!");
+		Assert.assertEquals("Test!", System.getenv("VAR_3_REQUIRED"));
+		
+		EnvVarReplacer.main(new String[] {file.toString() +":" + target.toString()});
+		Assert.assertTrue(compareFiles(target, Paths.get("test-resources", "test1-result.xml")));
+	}
 	
 	private boolean compareFiles(Path origin, Path target) throws IOException {
 		List<String> originContent = Files.readAllLines(origin);
@@ -178,9 +192,4 @@ public class EnvVarReplacerTest {
 		return true;
 	}
 	
-//	private boolean compareFiles(Path origin, Path target) throws IOException {
-//		byte[] originContent = Files.readAllBytes(origin);
-//		byte[] targetContent = Files.readAllBytes(target);
-//		return Arrays.equals(originContent, targetContent);
-//	}
 }

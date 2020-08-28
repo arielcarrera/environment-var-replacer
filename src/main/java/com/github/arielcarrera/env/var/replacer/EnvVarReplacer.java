@@ -14,6 +14,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -62,7 +64,8 @@ public class EnvVarReplacer {
 	private static boolean isForceBackupEnabled;
 	private static boolean isDebugEnabled;
 	private static boolean isSourceProperties;
-	private static Properties properties = null;
+	private static Properties properties;
+	private static Map<String, String> filepathsMap;
 
 	private static final String ERROR_MSG = "Invalid arguments.\n\nParameters: [FILE_PATH] [-p [PROPERTIES_FILE]] [-d] [-fb] [-b]\n Where FILE_PATH: comma-separated list of file-paths\n -p read from properties file\n PROPERTIES_FILE is required when 'p' flag is enabled\n -d debug mode\n -b crete backup file\n -fb force/override backup file";
 
@@ -112,7 +115,7 @@ public class EnvVarReplacer {
 		}
 		String[] paths = args[0].split(",");
 
-		Arrays.stream(paths).filter(EnvVarReplacer::validate).map(FilenameUtils::normalizeNoEndSeparator)
+		Arrays.stream(paths).map(EnvVarReplacer::validateAndResolveTargetFiles).map(FilenameUtils::normalizeNoEndSeparator)
 				.filter(EnvVarReplacer::checkFile).filter(EnvVarReplacer::checkBackupFileExists)
 				.forEach(EnvVarReplacer::replace);
 	}
@@ -127,14 +130,27 @@ public class EnvVarReplacer {
 		if (isSourceProperties)
 			isSourceProperties = false;
 		properties = null;
+		filepathsMap = new HashMap<String, String>();
 	}
 
-	static boolean validate(String path) {
+	static String validateAndResolveTargetFiles(String path) {
 		if (path == null || path.isEmpty()) {
 			System.err.println("Invalid path: " + path);
 			System.exit(ERROR_CODE_INVALID_PATH);
 		}
-		return true;
+		int indexOf = path.indexOf(":");
+		if (indexOf >= 0) {
+			//path with input:target format
+			String origin = path.substring(0, indexOf);
+			String target = path.substring(indexOf+1, path.length());
+			if (origin.isEmpty() || target.isEmpty()) {
+				System.err.println("Invalid path: " + path);
+				System.exit(ERROR_CODE_INVALID_PATH);
+			}
+			filepathsMap.put(origin, FilenameUtils.normalizeNoEndSeparator(target));
+			return origin;
+		}
+		return path;
 	}
 
 	static boolean checkFile(String path) {
@@ -238,7 +254,8 @@ public class EnvVarReplacer {
 			}
 			Path tmp = Paths.get(tmpPath);
 			try {
-				Files.move(tmp, origin);
+				String targetPath = filepathsMap.get(path);
+				Files.move(tmp, (targetPath != null ? Paths.get(targetPath) : origin));
 			} catch (IOException e) {
 				System.err.println("Replacement - Error moving tmp file: " + tmpPath + " a: " + path);
 				if (isDebugEnabled)
