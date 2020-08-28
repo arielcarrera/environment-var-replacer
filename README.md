@@ -1,4 +1,4 @@
-# environment-var-replacer
+# environment-var-replacer ![Maven Package](https://github.com/arielcarrera/environment-var-replacer/workflows/Maven%20Package/badge.svg)
 Little program to replace environment variables in old config files (for java docker images usage).
 
 # How to build
