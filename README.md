@@ -72,3 +72,8 @@ Eg.
 ```
 ./environment-var-replace testdir/testfile.xml,testdir/testfile2.xml -fb -d
 ```
+
+## PUBLISH TO GITHUB PACKAGES
+```
+mvn deploy -Dregistry=https://maven.pkg.github.com/arielcarrera -Dtoken=GH_TOKEN
+```
