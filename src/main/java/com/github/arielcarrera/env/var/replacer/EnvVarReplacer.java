@@ -67,19 +67,23 @@ public class EnvVarReplacer {
 	private static boolean isDebugEnabled;
 	private static boolean isSourceProperties;
 	private static boolean isSourceConfigFile;
+	private static boolean isRemovePrefixEnabled;
 	private static Properties properties;
 	private static Map<String, String> filepathsMap;
 	private static String[] paths;
 	private static String[] configPaths;
+	private static String prefix;
 
 	private static final String ERROR_MSG = "Invalid arguments.\n\nParameters: [-s] [FILE_PATH] [-p [PROPERTIES_FILE]] [-d] [-fb] [-b]\n"
-			+ " Where:\n -s : flag to indicate that a source file in FILE PATH is indicated and it is expected to contains a path by line\n"
+			+ " Where:\n -s FILE_PATH: flag to indicate that a source file in FILE PATH is indicated and it is expected to contains a path by line\n"
 			+ " FILE_PATH: comma-separated list of file-paths\n"
-			+ " -p: read from properties file.\n"
+			+ " -p PROPERTIES_FILE: read from properties file.\n"
 			+ " PROPERTIES_FILE: Path to the propertoies file. It is required when 'p' flag is enabled\n"
 			+ " -d: debug mode\n"
 			+ " -b: crete backup file\n"
-			+ " -fb: force/override backup file";
+			+ " -fb: force/override backup file\n"
+			+ " -rp PREFIX: indicate a prefix to be removed from properties names\n"
+			+ " PREFIX: prefix to be removed from keys";
 
 	/**
 	 * Processes a comma-separated list of files and replace expressions like ${}
@@ -129,6 +133,15 @@ public class EnvVarReplacer {
 				i++;
 				configPaths = args[i].split(",");
 				break;
+			case "-rp":
+				isRemovePrefixEnabled = true;
+				if (i >= args.length) {
+					System.err.println(ERROR_MSG);
+					System.exit(ERROR_CODE_INVALID_ARGUMENTS);
+				}
+				i++;
+				prefix = args[i];
+				break;
 			default:
 				if (paths != null) {
 					System.err.println(ERROR_MSG);
@@ -163,9 +176,12 @@ public class EnvVarReplacer {
 			isSourceProperties = false;
 		if (isSourceConfigFile)
 			isSourceConfigFile = false;
+		if (isRemovePrefixEnabled)
+			isRemovePrefixEnabled = false;
 		properties = null;
 		paths = null;
 		configPaths = null;
+		prefix = null;
 		filepathsMap = new HashMap<String, String>();
 	}
 
@@ -254,13 +270,13 @@ public class EnvVarReplacer {
 							System.out.println("Ok match!");
 						String expression = matcher.group(0);
 						String keyName = matcher.group(1);
-						String envVar = (isSourceProperties ? properties.getProperty(keyName) : System.getenv(keyName));
+						String envVar = resolveValue(keyName);
 						boolean hasEnvVar = envVar != null;
 						String group2 = matcher.group(2);
 						boolean isRequired = !(group2 != null && group2.startsWith(":"));
 						if (isRequired && !hasEnvVar) {
 							throw new RequiredEnvironmentVariableException(
-									"Environment Variable " + keyName + " is required - file: " + path);
+									"Environment Variable " + resolveValue(keyName) + " is required - file: " + path);
 						}
 						Optional<String> defaultValue = Optional.ofNullable(matcher.group(3));
 
@@ -317,6 +333,11 @@ public class EnvVarReplacer {
 			}
 		}
 
+	}
+
+	private static String resolveValue(String keyName) {
+		String key = (isRemovePrefixEnabled && keyName.startsWith(prefix) ? keyName.substring(prefix.length()) : keyName);
+		return isSourceProperties ? properties.getProperty(key) : System.getenv(key);
 	}
 
 	private static void doBackup(String path) {
