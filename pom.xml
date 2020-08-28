@@ -9,7 +9,7 @@
 
 	<groupId>com.github.arielcarrera</groupId>
 	<artifactId>environment-var-replacer</artifactId>
-	<version>1.1.0</version>
+	<version>1.1.1</version>
 
 	<name>Environment Variable Replacer</name>
 
