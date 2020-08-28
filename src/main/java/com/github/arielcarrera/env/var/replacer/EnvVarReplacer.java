@@ -2,10 +2,12 @@ package com.github.arielcarrera.env.var.replacer;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,6 +15,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,8 +42,7 @@ public class EnvVarReplacer {
 	}
 
 	private static final Pattern pattern = Pattern
-			.compile(
-					"\\$\\{((?:(?![:])[\\w])+)(:((?:(?![:])[\\w\\s\\p{P}\\p{Sc}\\p{Sk}\\p{So}\\p{Z}])+)?)?}");
+			.compile("\\$\\{((?:(?![:])[\\w])+)(:((?:(?![:])[\\w\\s\\p{P}\\p{Sc}\\p{Sk}\\p{So}\\p{Z}])+)?)?}");
 
 	public static final int ERROR_CODE_INVALID_ARGUMENTS = 1;
 	public static final int ERROR_CODE_INVALID_PATH = 2;
@@ -59,6 +61,10 @@ public class EnvVarReplacer {
 	private static boolean isBackupEnabled;
 	private static boolean isForceBackupEnabled;
 	private static boolean isDebugEnabled;
+	private static boolean isSourceProperties;
+	private static Properties properties = null;
+
+	private static final String ERROR_MSG = "Invalid arguments.\n\nParameters: [FILE_PATH] [-p [PROPERTIES_FILE]] [-d] [-fb] [-b]\n Where FILE_PATH: comma-separated list of file-paths\n -p read from properties file\n PROPERTIES_FILE is required when 'p' flag is enabled\n -d debug mode\n -b crete backup file\n -fb force/override backup file";
 
 	/**
 	 * Processes a comma-separated list of files and replace expressions like ${}
@@ -71,8 +77,7 @@ public class EnvVarReplacer {
 		initDefaults();
 
 		if (args.length < 1) {
-			System.err.println(
-					"Invalid arguments.\n\nParameters: [FILE_PATH]\n Where FILE_PATH: comma-separated list of file-paths");
+			System.err.println(ERROR_MSG);
 			System.exit(ERROR_CODE_INVALID_ARGUMENTS);
 		}
 		if (args.length > 1) {
@@ -86,11 +91,27 @@ public class EnvVarReplacer {
 				case "-b":
 					isBackupEnabled = true;
 					break;
+				case "-p":
+					isSourceProperties = true;
+					if (i >= args.length) {
+						System.err.println(ERROR_MSG);
+						System.exit(ERROR_CODE_INVALID_ARGUMENTS);
+					}
+					i++;
+					String propertiesFilePath = args[i];
+					try (InputStream input = new FileInputStream(propertiesFilePath)) {
+			            properties = new Properties();
+			            properties.load(input);
+			        } catch (IOException ex) {
+			            ex.printStackTrace();
+			        }
+					break;
 				}
 
 			}
 		}
 		String[] paths = args[0].split(",");
+
 		Arrays.stream(paths).filter(EnvVarReplacer::validate).map(FilenameUtils::normalizeNoEndSeparator)
 				.filter(EnvVarReplacer::checkFile).filter(EnvVarReplacer::checkBackupFileExists)
 				.forEach(EnvVarReplacer::replace);
@@ -103,6 +124,9 @@ public class EnvVarReplacer {
 			isForceBackupEnabled = false;
 		if (isDebugEnabled)
 			isDebugEnabled = false;
+		if (isSourceProperties)
+			isSourceProperties = false;
+		properties = null;
 	}
 
 	static boolean validate(String path) {
@@ -154,7 +178,7 @@ public class EnvVarReplacer {
 							System.out.println("Ok match!");
 						String expression = matcher.group(0);
 						String keyName = matcher.group(1);
-						String envVar = System.getenv(keyName);
+						String envVar = (isSourceProperties ? properties.getProperty(keyName) : System.getenv(keyName));
 						boolean hasEnvVar = envVar != null;
 						String group2 = matcher.group(2);
 						boolean isRequired = !(group2 != null && group2.startsWith(":"));
