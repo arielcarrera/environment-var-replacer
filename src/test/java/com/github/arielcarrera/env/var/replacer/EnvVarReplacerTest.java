@@ -148,7 +148,6 @@ public class EnvVarReplacerTest {
 		Files.copy(template, file , StandardCopyOption.REPLACE_EXISTING);
 		
 		environmentVariables.set("V_HOST", "HOST");
-		//environmentVariables.set("V_PORT", "1515");
 		environmentVariables.set("V_NAME", "NAME");
 		environmentVariables.set("V_USER", "USER");
 		environmentVariables.set("V_PASS", "PASS");
@@ -180,6 +179,71 @@ public class EnvVarReplacerTest {
 		
 		EnvVarReplacer.main(new String[] {file.toString() +":" + target.toString()});
 		Assert.assertTrue(compareFiles(target, Paths.get("test-resources", "test1-result.xml")));
+	}
+	
+	@Test
+	public void testWhitConfigFile() throws IOException {
+		Path template = Paths.get("test-resources", "test1-template.xml");
+		Path file = Paths.get("test-resources", "test1.xml");
+		Path target = Paths.get("test-resources", "test1-target.xml");
+		Files.copy(template, file , StandardCopyOption.REPLACE_EXISTING);
+		Files.deleteIfExists(target);
+		
+		Path template2 = Paths.get("test-resources", "test7-multipleinline-template.xml");
+		Path file2 = Paths.get("test-resources", "test7-multipleinline.xml");
+		Files.copy(template2, file2 , StandardCopyOption.REPLACE_EXISTING);
+		
+		environmentVariables.set("VAR_3_REQUIRED", "Test!");
+		environmentVariables.set("VAR_A", "A");
+		environmentVariables.set("VAR_B", "B");
+		environmentVariables.set("VAR_C", "C");
+		environmentVariables.set("VAR_D", "D");
+		environmentVariables.set("VAR_E", "E");
+		environmentVariables.set("VAR_F", "F");
+		environmentVariables.set("V_HOST", "HOST");
+		environmentVariables.set("V_NAME", "NAME");
+		environmentVariables.set("V_USER", "USER");
+		environmentVariables.set("V_PASS", "PASS");
+		
+		Path configFile = Paths.get("test-resources", "replacer.cfg");
+		EnvVarReplacer.main(new String[] {"-s", configFile.toString()});
+		Assert.assertTrue(compareFiles(target, Paths.get("test-resources", "test1-result.xml")));
+		Assert.assertTrue(compareFiles(file2, Paths.get("test-resources", "test7-multipleinline-result.xml")));
+	}
+	
+	@Test
+	public void testWhitConfigFileAndParameters() throws IOException {
+		Path template = Paths.get("test-resources", "test1-template.xml");
+		Path file = Paths.get("test-resources", "test1.xml");
+		Path target = Paths.get("test-resources", "test1-target.xml");
+		Files.copy(template, file, StandardCopyOption.REPLACE_EXISTING);
+		Files.deleteIfExists(target);
+		
+		Path template2 = Paths.get("test-resources", "test7-multipleinline-template.xml");
+		Path file2 = Paths.get("test-resources", "test7-multipleinline.xml");
+		Files.copy(template2, file2, StandardCopyOption.REPLACE_EXISTING);
+		
+		environmentVariables.set("VAR_3_REQUIRED", "Test!");
+		environmentVariables.set("VAR_A", "A");
+		environmentVariables.set("VAR_B", "B");
+		environmentVariables.set("VAR_C", "C");
+		environmentVariables.set("VAR_D", "D");
+		environmentVariables.set("VAR_E", "E");
+		environmentVariables.set("VAR_F", "F");
+		environmentVariables.set("V_HOST", "HOST");
+		environmentVariables.set("V_NAME", "NAME");
+		environmentVariables.set("V_USER", "USER");
+		environmentVariables.set("V_PASS", "PASS");
+		
+		Path template3 = Paths.get("test-resources", "test8-issue7-template.xml");
+		Path file3 = Paths.get("test-resources", "test8-issue7.xml");
+		Files.copy(template3, file3, StandardCopyOption.REPLACE_EXISTING);
+
+		Path configFile = Paths.get("test-resources", "replacer.cfg");
+		EnvVarReplacer.main(new String[] {"-s", configFile.toString(), file3.toString()});
+		Assert.assertTrue(compareFiles(target, Paths.get("test-resources", "test1-result.xml")));
+		Assert.assertTrue(compareFiles(file2, Paths.get("test-resources", "test7-multipleinline-result.xml")));
+		Assert.assertTrue(compareFiles(file3, Paths.get("test-resources", "test8-issue7-result.xml")));
 	}
 	
 	private boolean compareFiles(Path origin, Path target) throws IOException {
