@@ -30,3 +30,10 @@ docker-graalvm/ubuntu/environment-var-replacer
 docker-graalvm/alpine/environment-var-replacer
 docker-graalvm/ubuntu/environment-var-replacer-ubuntu
 docker-graalvm/centos/environment-var-replacer-centos
+test-resources/test1-target.xml
+test-resources/test8-issue7.xml
+test-resources/test7-multipleinline.xml
+test-resources/test6-debug.xml
+test-resources/test5-backup.xml
+test-resources/test4-override-backup.xml
+test-resources/test1.xml
