@@ -59,7 +59,7 @@ public class EnvVarReplacer {
 	public static final int ERROR_CODE_BACKUP_ERROR = -3;
 	public static final int ERROR_CODE_BACKUP_READ_ERROR = -4;
 	public static final int ERROR_CODE_BACKUP_WRITE_ERROR = -5;
-	public static final int ERROR_CODE_DELETING_FILE = -6;
+	//public static final int ERROR_CODE_DELETING_FILE = -6;
 	public static final int ERROR_CODE_RENAMING_TMP_FILE = -7;
 
 	private static boolean isBackupEnabled;
@@ -300,31 +300,23 @@ public class EnvVarReplacer {
 						e.printStackTrace();
 				}
 				System.exit(ERROR_CODE_VAR_REQUIRED);
-			}
-		}
-		if (!removeTmpFile) {
-			Path origin = Paths.get(path);
-			try {
-				Files.delete(origin);
-			} catch (IOException e) {
-				System.err.println("Replacement - Error deleting file: " + path);
-				if (isDebugEnabled)
-					e.printStackTrace();
-				System.exit(ERROR_CODE_DELETING_FILE);
-			}
-			Path tmp = Paths.get(tmpPath);
-			try {
+			} else {
+				Path origin = Paths.get(path);
+				Path tmp = Paths.get(tmpPath);
 				String targetPath = filepathsMap.get(path);
-				if (isDebugEnabled) System.out.println("Moving tmp file from:" + origin.toString() + " to: " + (targetPath != null ? targetPath : origin.toString()));
-				Files.move(tmp, (targetPath != null ? Paths.get(targetPath) : origin));
-			} catch (IOException e) {
-				System.err.println("Replacement - Error moving tmp file: " + tmpPath + " a: " + path);
-				if (isDebugEnabled)
-					e.printStackTrace();
-				System.exit(ERROR_CODE_RENAMING_TMP_FILE);
+				Path target = (targetPath != null ? Paths.get(targetPath) : origin);
+				try {
+					if (isDebugEnabled) System.out.println("Moving tmp file from:" + tmp.toString() + " to: " + target.toString());
+					Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+				} catch (IOException e) {
+					System.err.println("Replacement - Error moving tmp file: " + tmpPath + " to: " + target);
+					if (isDebugEnabled)
+						e.printStackTrace();
+					System.exit(ERROR_CODE_RENAMING_TMP_FILE);
+				}
 			}
-
 		}
+
 	}
 
 	private static void doBackup(String path) {
