@@ -112,7 +112,22 @@ public class EnvVarReplacerTest {
 		Assert.assertEquals("Test!", System.getenv("VAR_3_REQUIRED"));
 		
 		EnvVarReplacer.main(new String[] {file.toString(),"-d"});
-		Assert.assertTrue(systemOutRule.getLog().startsWith("Ok match!"));
+		Assert.assertTrue(systemOutRule.getLog().contains("Moving tmp file from:test-resources"));
+	}
+	
+	@Test
+	public void testInTraceMode() throws IOException {
+		Path template = Paths.get("test-resources", "test6-debug-template.xml");
+		Path file = Paths.get("test-resources", "test6-debug.xml");
+		Files.copy(template, file , StandardCopyOption.REPLACE_EXISTING);
+		
+		environmentVariables.set("VAR_3_REQUIRED", "Test!");
+		Assert.assertEquals("Test!", System.getenv("VAR_3_REQUIRED"));
+		
+		EnvVarReplacer.main(new String[] {file.toString(),"-t"});
+		Assert.assertTrue(systemOutRule.getLog().contains("Moving tmp file from:test-resources"));
+		Assert.assertTrue(systemOutRule.getLog().contains("input : <?xml version=\"1.0\" encoding=\"UTF-8\"?>"));
+		Assert.assertTrue(systemOutRule.getLog().contains("output: <?xml version=\"1.0\" encoding=\"UTF-8\"?>"));
 	}
 	
 	// file: test7-multipleinline
@@ -258,12 +273,52 @@ public class EnvVarReplacerTest {
 		Assert.assertTrue(compareFiles(file, Paths.get("test-resources", "test1-result.xml")));
 	}
 	
+	@Test
+	public void testInnerExpressionDefault() throws IOException {
+		Path template = Paths.get("test-resources", "test9-template.xml");
+		Path file = Paths.get("test-resources", "test9.xml");
+		Files.copy(template, file , StandardCopyOption.REPLACE_EXISTING);
+		
+		environmentVariables.set("VAR_3_REQUIRED", "Test!");
+		Assert.assertEquals("Test!", System.getenv("VAR_3_REQUIRED"));
+		environmentVariables.set("VAR_6_REQUIRED", "Test $!12321");
+		Assert.assertEquals("Test $!12321", System.getenv("VAR_6_REQUIRED"));
+		environmentVariables.set("VAR_7", "O$K");
+		Assert.assertEquals("O$K", System.getenv("VAR_7"));
+		
+		
+		EnvVarReplacer.main(new String[] {file.toString(), "-rp", "env."});
+		Assert.assertTrue(compareFiles(file, Paths.get("test-resources", "test9-result.xml")));
+	}
+	
+	@Test
+	public void testInnerExpression() throws IOException {
+		Path template = Paths.get("test-resources", "test9-template.xml");
+		Path file = Paths.get("test-resources", "test9.xml");
+		Files.copy(template, file , StandardCopyOption.REPLACE_EXISTING);
+		
+		environmentVariables.set("VAR_3_REQUIRED", "Test!");
+		Assert.assertEquals("Test!", System.getenv("VAR_3_REQUIRED"));
+		environmentVariables.set("VAR_4_OPTIONAL", "1234567890");
+		Assert.assertEquals("1234567890", System.getenv("VAR_4_OPTIONAL"));
+		environmentVariables.set("VAR_5_WITH_DEFAULT", "var5");
+		Assert.assertEquals("var5", System.getenv("VAR_5_WITH_DEFAULT"));
+		environmentVariables.set("VAR_6_REQUIRED", "{Test $!12321 - required value\\}");
+		Assert.assertEquals("{Test $!12321 - required value\\}", System.getenv("VAR_6_REQUIRED"));
+		
+		EnvVarReplacer.main(new String[] {file.toString(), "-rp", "env."});
+		Assert.assertTrue(compareFiles(file, Paths.get("test-resources", "test9-withVar5-result.xml")));
+	}
+	
 	private boolean compareFiles(Path origin, Path target) throws IOException {
 		List<String> originContent = Files.readAllLines(origin);
 		List<String> targetContent = Files.readAllLines(target);
 		if (originContent.size() != targetContent.size()) return false;
 		for (int i = 0; i < originContent.size(); i++) {
-			if (!originContent.get(i).equals(targetContent.get(i))) return false;
+			if (!originContent.get(i).equals(targetContent.get(i))) {
+				System.err.println("Expected line: " + targetContent.get(i) + "\nResult line  : " + originContent.get(i));
+				return false;
+			}
 		}
 		return true;
 	}

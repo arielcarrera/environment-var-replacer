@@ -16,14 +16,17 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Set;
+import java.util.UUID;
 
 import org.apache.commons.io.FilenameUtils;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
 public class EnvVarReplacer {
 	public static class RequiredEnvironmentVariableException extends Exception {
@@ -45,9 +48,6 @@ public class EnvVarReplacer {
 		}
 	}
 
-	private static final Pattern pattern = Pattern
-			.compile("\\$\\{((?:(?![:])[\\w])+)(:((?:(?![:])[\\w\\s\\p{P}\\p{Sc}\\p{Sk}\\p{So}\\p{Z}])+)?)?}");
-
 	public static final int ERROR_CODE_INVALID_ARGUMENTS = 1;
 	public static final int ERROR_CODE_INVALID_PATH = 2;
 	public static final int ERROR_CODE_FILE_NOT_FOUND = 3;
@@ -65,6 +65,7 @@ public class EnvVarReplacer {
 	private static boolean isBackupEnabled;
 	private static boolean isForceBackupEnabled;
 	private static boolean isDebugEnabled;
+	private static boolean isTraceEnabled;
 	private static boolean isSourceProperties;
 	private static boolean isSourceConfigFile;
 	private static boolean isRemovePrefixEnabled;
@@ -80,6 +81,7 @@ public class EnvVarReplacer {
 			+ " -p PROPERTIES_FILE: read from properties file.\n"
 			+ " PROPERTIES_FILE: Path to the propertoies file. It is required when 'p' flag is enabled\n"
 			+ " -d: debug mode\n"
+			+ " -t: trace mode\n"
 			+ " -b: crete backup file\n"
 			+ " -fb: force/override backup file\n"
 			+ " -rp PREFIX: indicate a prefix to be removed from properties names\n"
@@ -101,6 +103,8 @@ public class EnvVarReplacer {
 		}
 		for (int i = 0; i < args.length; i++) {
 			switch (args[i]) {
+			case "-t":
+				isTraceEnabled = true;
 			case "-d":
 				isDebugEnabled = true;
 				break;
@@ -166,18 +170,13 @@ public class EnvVarReplacer {
 	}
 
 	private static void initDefaults() {
-		if (isBackupEnabled)
-			isBackupEnabled = false;
-		if (isForceBackupEnabled)
-			isForceBackupEnabled = false;
-		if (isDebugEnabled)
-			isDebugEnabled = false;
-		if (isSourceProperties)
-			isSourceProperties = false;
-		if (isSourceConfigFile)
-			isSourceConfigFile = false;
-		if (isRemovePrefixEnabled)
-			isRemovePrefixEnabled = false;
+		isBackupEnabled = false;
+		isForceBackupEnabled = false;
+		isDebugEnabled = false;
+		isTraceEnabled = false;
+		isSourceProperties = false;
+		isSourceConfigFile = false;
+		isRemovePrefixEnabled = false;
 		properties = null;
 		paths = null;
 		configPaths = null;
@@ -264,25 +263,9 @@ public class EnvVarReplacer {
 			try (BufferedReader br = new BufferedReader(new FileReader(path))) {
 				String line = br.readLine();
 				while (line != null) {
-					Matcher matcher = pattern.matcher(line);
-					while (matcher.find()) {
-						if (isDebugEnabled)
-							System.out.println("Ok match!");
-						String expression = matcher.group(0);
-						String keyName = matcher.group(1);
-						String envVar = resolveValue(keyName);
-						boolean hasEnvVar = envVar != null;
-						String group2 = matcher.group(2);
-						boolean isRequired = !(group2 != null && group2.startsWith(":"));
-						if (isRequired && !hasEnvVar) {
-							throw new RequiredEnvironmentVariableException(
-									"Environment Variable " + resolveValue(keyName) + " is required - file: " + path);
-						}
-						Optional<String> defaultValue = Optional.ofNullable(matcher.group(3));
-
-						line = line.replace(expression,
-								(hasEnvVar ? envVar : (hasEnvVar ? envVar : defaultValue.orElse(""))));
-					}
+					if (isTraceEnabled) System.out.println("input : " + line);
+					line = processLine(line);
+					if (isTraceEnabled) System.out.println("output: " + line);
 					bw.write(line);
 					line = br.readLine();
 					if (line != null) {
@@ -333,6 +316,111 @@ public class EnvVarReplacer {
 			}
 		}
 
+	}
+
+	private static String processLine(String line) throws RequiredEnvironmentVariableException {
+		ExpressionResult result = new ExpressionResult(true, line, new HashSet<String>());
+		int i = 0;
+		while ((result = processExpression(result)).isReplaced()) {
+			i++;
+			if (i > 99) throw new RuntimeException("Error processing line: " + line);
+		}
+		String string = result.getStr();
+		//replace escaped end chars...
+		for (String rplKey : result.getEscapedEndChars()) {
+			string = string.replace(rplKey, "}");
+		}
+
+		return string;
+	}
+	
+	@Data @AllArgsConstructor
+	private static class ExpressionResult{
+		boolean replaced = false;
+		String str;
+		Set<String> escapedEndChars;
+	}
+	private static ExpressionResult processExpression(ExpressionResult exp) throws RequiredEnvironmentVariableException {
+		char[] charArray = exp.getStr().toCharArray();
+		int startTagIndex = -1;
+		int keyEndIndex = -1;
+		int endTagIndex = -1;
+		boolean hasEscapedEndChar = false;
+		
+		for (int i = 0; i < charArray.length; i++) {
+			if (charArray[i] == '$' ) {
+				if (i + 1 < charArray.length && charArray[i+1] == '{') {
+					// if exists '${' 
+					startTagIndex = i;
+					keyEndIndex = -1;
+					i++; //skip ${
+				}
+			} else if (charArray[i] == ':') {
+				if (keyEndIndex < 0) {
+					keyEndIndex = i;
+				}
+			} else if (charArray[i] == '}') {
+				if (startTagIndex > -1) {
+					if (keyEndIndex > -1) {
+						if (i - 1 >= 0 && charArray[i-1] == '\\') {
+							hasEscapedEndChar = true;
+						} else {
+							endTagIndex = i;
+							break;
+						}
+					} else  {
+						keyEndIndex = i;
+						endTagIndex = i;
+						break;
+					}
+				}
+				
+			} else {
+				// if startTagIndex exists but no boundary is determined..
+				if (startTagIndex > -1 && keyEndIndex < 0) {
+					// if char is not allowed... - | . | 0-1 | A-Z | _ | a-z | 
+					char c = charArray[i];
+					if (!(c == 45 || c == 46 || (c > 47 && c < 58) || (c > 64 && c < 91) || c == 95 || (c > 96 && c < 123))) {
+						startTagIndex = -1;
+					}
+				}
+				//else any char allowed
+			}
+		}
+
+		//if an expression is detected...
+		if (startTagIndex > -1 && keyEndIndex > -1 && endTagIndex > -1) {
+			String keyName = exp.getStr().substring(startTagIndex+2, keyEndIndex);
+			String value = resolveValue(keyName);
+			
+			boolean hasDefaultValue = keyEndIndex != endTagIndex;
+			boolean isRequired = !hasDefaultValue;
+			if (isRequired && value == null) {
+				throw new RequiredEnvironmentVariableException(
+						"Environment Variable " + keyName + " is required");
+			}
+			if (value == null) {
+				value = exp.getStr().substring(keyEndIndex + 1, endTagIndex);
+			}
+			
+			//replace escaped end tags....
+			if (value.contains("\\}") || hasEscapedEndChar) {
+				int indexOf = value.indexOf("\\}");
+				while (indexOf > 0 ) {
+					//generate random key to replace
+					String randomUUID = "__REPLACE__" + UUID.randomUUID().toString();
+					exp.getEscapedEndChars().add(randomUUID);
+					value = value.substring(0, indexOf) + randomUUID + value.substring(indexOf + "\\}".length());
+					indexOf = value.indexOf("\\}");
+				}
+			}
+			
+			if (endTagIndex + 1 < exp.getStr().length()) {
+				return new ExpressionResult(true, exp.getStr().substring(0, startTagIndex) + value + exp.getStr().substring(endTagIndex +1, exp.getStr().length()), exp.getEscapedEndChars());
+			}
+			return new ExpressionResult(true, exp.getStr().substring(0, startTagIndex) + value, exp.getEscapedEndChars());
+		}
+		return new ExpressionResult(false, exp.getStr(), exp.getEscapedEndChars());
 	}
 
 	private static String resolveValue(String keyName) {

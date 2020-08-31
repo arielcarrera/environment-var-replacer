@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<test>
+	<file attribute="1" required="${env.VAR_1_WITH_DEFAULT:false}">
+		<content>
+			${env.VAR_2_WHIT_DEFAULT:${env.VAR_5_WITH_DEFAULT:This is a sample content $!}}
+		</content>
+	</file>
+	<file attribute="2" required="false">
+		<dummy/>
+	</file>
+	<file attribute="${env.VAR_3_REQUIRED}" required="true">
+		<dummy>
+			<content>${env.VAR_4_OPTIONAL:${env.VAR_6_REQUIRED}}</content>
+			<content2>${env.VAR_7:${env.VAR_6_REQUIRED}}</content2>
+			<brokenline>${env.VAR_4_OPTIONAL:${env.VAR_6_REQUIRED}</brokenline>
+		</dummy>
+	</file>
+</test>
