@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<test>
+	<file attribute="1" required="false">
+		<content>
+			var5
+		</content>
+	</file>
+	<file attribute="2" required="false">
+		<dummy/>
+	</file>
+	<file attribute="Test!" required="true">
+		<dummy>
+			<content>1234567890</content>
+			<content2>{Test $!12321 - required value}</content2>
+			<brokenline>${env.VAR_4_OPTIONAL:{Test $!12321 - required value}</brokenline>
+		</dummy>
+	</file>
+</test>
