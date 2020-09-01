@@ -310,6 +310,40 @@ public class EnvVarReplacerTest {
 		Assert.assertTrue(compareFiles(file, Paths.get("test-resources", "test9-withVar5-result.xml")));
 	}
 	
+	@Test
+	public void testFilterByPrefixes() throws IOException {
+		Path template = Paths.get("test-resources", "test10-template.xml");
+		Path file = Paths.get("test-resources", "test10.xml");
+		Files.copy(template, file , StandardCopyOption.REPLACE_EXISTING);
+		
+		environmentVariables.set("VAR_1", "A");
+		environmentVariables.set("VAR_2", "B");
+		environmentVariables.set("VAR_3", "C");
+		environmentVariables.set("VAR_4", "D");
+		environmentVariables.set("VAR_5", "E");
+		environmentVariables.set("VAR_6", "F");
+		environmentVariables.set("VAR_7", "G");
+		environmentVariables.set("VAR_8", "H");
+		
+		EnvVarReplacer.main(new String[] {file.toString(), "-rp", "env.", "-fp", "env.,TEST-"});
+		Assert.assertTrue(compareFiles(file, Paths.get("test-resources", "test10-result.xml")));
+	}
+	
+	@Test
+	public void testFilterByPrefixesDefaults() throws IOException {
+		Path template = Paths.get("test-resources", "test10-template.xml");
+		Path file = Paths.get("test-resources", "test10.xml");
+		Files.copy(template, file , StandardCopyOption.REPLACE_EXISTING);
+		
+		environmentVariables.set("VAR_4", "D");
+		environmentVariables.set("VAR_6", "F");
+		environmentVariables.set("VAR_7", "G");
+		environmentVariables.set("VAR_8", "H");
+		
+		EnvVarReplacer.main(new String[] {file.toString(), "-rp", "env.", "-fp", "env.,TEST-"});
+		Assert.assertTrue(compareFiles(file, Paths.get("test-resources", "test10-defaults-result.xml")));
+	}
+	
 	private boolean compareFiles(Path origin, Path target) throws IOException {
 		List<String> originContent = Files.readAllLines(origin);
 		List<String> targetContent = Files.readAllLines(target);
