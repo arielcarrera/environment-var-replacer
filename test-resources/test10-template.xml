@@ -1,0 +1,18 @@
+test ${env.VAR_1:${env.VAR_2:B}} test
+test ${VAR_1:${env.VAR_2:B}} test
+test ${env.VAR_1:${VAR_2:B}} test
+test ${VAR_1:${VAR_2:B}} test
+
+test ${env.VAR_3:${env.VAR_4}} test
+test ${VAR_3:${env.VAR_4}} test
+test ${env.VAR_3:${VAR_4}} test
+test ${VAR_3:${VAR_4}} test
+
+test ${env.VAR_5:} test
+test ${VAR_5:} test
+test ${env.VAR_6} test
+test ${VAR_6} test
+test ${env.VAR_7} test ${env.VAR_8} test
+test ${env.VAR_7} test ${VAR_8} test
+test ${VAR_7} test ${env.VAR_8} test
+test ${VAR_7} test ${VAR_8} test

@@ -1,0 +1,18 @@
+test A test
+test ${VAR_1:B} test
+test A test
+test ${VAR_1:${VAR_2:B}} test
+
+test C test
+test ${VAR_3:D} test
+test C test
+test ${VAR_3:${VAR_4}} test
+
+test E test
+test ${VAR_5:} test
+test F test
+test ${VAR_6} test
+test G test H test
+test G test ${VAR_8} test
+test ${VAR_7} test H test
+test ${VAR_7} test ${VAR_8} test

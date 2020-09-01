@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
@@ -69,11 +70,13 @@ public class EnvVarReplacer {
 	private static boolean isSourceProperties;
 	private static boolean isSourceConfigFile;
 	private static boolean isRemovePrefixEnabled;
+	private static boolean isFilterByPrefixEnabled;
 	private static Properties properties;
 	private static Map<String, String> filepathsMap;
 	private static String[] paths;
 	private static String[] configPaths;
 	private static String prefix;
+	private static String[] filterPrefixes;
 
 	private static final String ERROR_MSG = "Invalid arguments.\n\nParameters: [-s] [FILE_PATH] [-p [PROPERTIES_FILE]] [-d] [-fb] [-b]\n"
 			+ " Where:\n -s FILE_PATH: flag to indicate that a source file in FILE PATH is indicated and it is expected to contains a path by line\n"
@@ -85,7 +88,9 @@ public class EnvVarReplacer {
 			+ " -b: crete backup file\n"
 			+ " -fb: force/override backup file\n"
 			+ " -rp PREFIX: indicate a prefix to be removed from properties names\n"
-			+ " PREFIX: prefix to be removed from keys";
+			+ " PREFIX: prefix to be removed from keys\n"
+			+ " -fp PREFIX: indicate a list of prefixes to filter by\n"
+			+ " PREFIX: prefixes";
 
 	/**
 	 * Processes a comma-separated list of files and replace expressions like ${}
@@ -146,6 +151,15 @@ public class EnvVarReplacer {
 				i++;
 				prefix = args[i];
 				break;
+			case "-fp":
+				isFilterByPrefixEnabled = true;
+				if (i >= args.length) {
+					System.err.println(ERROR_MSG);
+					System.exit(ERROR_CODE_INVALID_ARGUMENTS);
+				}
+				i++;
+				filterPrefixes = args[i].split(",");
+				break;
 			default:
 				if (paths != null) {
 					System.err.println(ERROR_MSG);
@@ -177,6 +191,8 @@ public class EnvVarReplacer {
 		isSourceProperties = false;
 		isSourceConfigFile = false;
 		isRemovePrefixEnabled = false;
+		isFilterByPrefixEnabled = false;
+		filterPrefixes = null;
 		properties = null;
 		paths = null;
 		configPaths = null;
@@ -319,7 +335,7 @@ public class EnvVarReplacer {
 	}
 
 	private static String processLine(String line) throws RequiredEnvironmentVariableException {
-		ExpressionResult result = new ExpressionResult(true, line, new HashSet<String>());
+		ExpressionResult result = new ExpressionResult(true, line, new HashSet<String>(), new HashMap<String, String>());
 		int i = 0;
 		while ((result = processExpression(result)).isReplaced()) {
 			i++;
@@ -330,8 +346,26 @@ public class EnvVarReplacer {
 		for (String rplKey : result.getEscapedEndChars()) {
 			string = string.replace(rplKey, "}");
 		}
-
+		//replace skipped regions...
+		Set<String> keySet = result.getSkippedRegions().keySet();
+		string = replaceRegion(string, keySet, result.getSkippedRegions());
+		
 		return string;
+	}
+	
+	private static String replaceRegion(String str, Set<String> keys, Map<String, String> map) {
+		Set<String> keysToRemove = new HashSet<String>();
+		boolean replaced = false;
+		for (String key : keys) {
+			if (str.contains(key)) {
+				keysToRemove.add(key);
+				str = str.replace(key, map.get(key));
+				replaced = true;
+			}
+		}
+		//remove processed keys from pendings
+		keys.removeAll(keysToRemove);
+		return replaced && !keys.isEmpty() ? replaceRegion(str, keys, map) : str;
 	}
 	
 	@Data @AllArgsConstructor
@@ -339,6 +373,7 @@ public class EnvVarReplacer {
 		boolean replaced = false;
 		String str;
 		Set<String> escapedEndChars;
+		Map<String, String> skippedRegions;
 	}
 	private static ExpressionResult processExpression(ExpressionResult exp) throws RequiredEnvironmentVariableException {
 		char[] charArray = exp.getStr().toCharArray();
@@ -391,8 +426,25 @@ public class EnvVarReplacer {
 		//if an expression is detected...
 		if (startTagIndex > -1 && keyEndIndex > -1 && endTagIndex > -1) {
 			String keyName = exp.getStr().substring(startTagIndex+2, keyEndIndex);
-			String value = resolveValue(keyName);
+			boolean toInclude = (isFilterByPrefixEnabled ? false : true);
+			if (isFilterByPrefixEnabled) {
+				for (String pre : filterPrefixes) {
+					if (keyName.startsWith(pre)) {
+						toInclude = true;
+						break;
+					}
+				}
+				if (!toInclude) {
+					String randomUUID = "__SKIPPED__" + UUID.randomUUID().toString();
+					exp.getSkippedRegions().put(randomUUID, exp.getStr().substring(startTagIndex, endTagIndex + 1));
+					if (endTagIndex + 1 < exp.getStr().length()) {
+						return new ExpressionResult(true, exp.getStr().substring(0, startTagIndex) + randomUUID + exp.getStr().substring(endTagIndex +1, exp.getStr().length()), exp.getEscapedEndChars(), exp.getSkippedRegions());
+					}
+					return new ExpressionResult(true, exp.getStr().substring(0, startTagIndex) + randomUUID, exp.getEscapedEndChars(), exp.getSkippedRegions());
+				}
+			}
 			
+			String value = resolveValue(keyName);
 			boolean hasDefaultValue = keyEndIndex != endTagIndex;
 			boolean isRequired = !hasDefaultValue;
 			if (isRequired && value == null) {
@@ -416,11 +468,11 @@ public class EnvVarReplacer {
 			}
 			
 			if (endTagIndex + 1 < exp.getStr().length()) {
-				return new ExpressionResult(true, exp.getStr().substring(0, startTagIndex) + value + exp.getStr().substring(endTagIndex +1, exp.getStr().length()), exp.getEscapedEndChars());
+				return new ExpressionResult(true, exp.getStr().substring(0, startTagIndex) + value + exp.getStr().substring(endTagIndex +1, exp.getStr().length()), exp.getEscapedEndChars(), exp.getSkippedRegions());
 			}
-			return new ExpressionResult(true, exp.getStr().substring(0, startTagIndex) + value, exp.getEscapedEndChars());
+			return new ExpressionResult(true, exp.getStr().substring(0, startTagIndex) + value, exp.getEscapedEndChars(), exp.getSkippedRegions());
 		}
-		return new ExpressionResult(false, exp.getStr(), exp.getEscapedEndChars());
+		return new ExpressionResult(false, exp.getStr(), exp.getEscapedEndChars(), exp.getSkippedRegions());
 	}
 
 	private static String resolveValue(String keyName) {
