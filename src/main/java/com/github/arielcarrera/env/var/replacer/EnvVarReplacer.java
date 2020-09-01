@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
@@ -78,19 +78,22 @@ public class EnvVarReplacer {
 	private static String prefix;
 	private static String[] filterPrefixes;
 
-	private static final String ERROR_MSG = "Invalid arguments.\n\nParameters: [-s] [FILE_PATH] [-p [PROPERTIES_FILE]] [-d] [-fb] [-b]\n"
-			+ " Where:\n -s FILE_PATH: flag to indicate that a source file in FILE PATH is indicated and it is expected to contains a path by line\n"
-			+ " FILE_PATH: comma-separated list of file-paths\n"
-			+ " -p PROPERTIES_FILE: read from properties file.\n"
-			+ " PROPERTIES_FILE: Path to the propertoies file. It is required when 'p' flag is enabled\n"
+	private static final String ERROR_MSG = "Invalid arguments.\n\n" + Optional.ofNullable( EnvVarReplacer.class.getPackage().getImplementationTitle()).orElse("Environment Var Replacer ") + Optional.ofNullable(EnvVarReplacer.class.getPackage().getImplementationVersion()).orElse("") + "\n\n" 
+			+ "Parameters: [-s] [FILE_PATH] [-p [PROPERTIES_FILE]] [-d] [-t] [-b] [-fb] [-rp] [-fp]\n"
+			+ " Where:\n"
+			+ " FILE_PATH: comma-separated list of file-paths to process\n"
+			+ " -s [FILE_PATH]: flag to indicate that a source file in FILE PATH is present and it is expected to contain a path by line\n"
+			+ "    FILE_PATH: comma-separated list of file-paths\n"
+			+ " -p [PROPERTIES_FILE]: read from properties file.\n"
+			+ "    PROPERTIES_FILE: Path to the properties file. It is required when 'p' flag is enabled\n"
 			+ " -d: debug mode\n"
 			+ " -t: trace mode\n"
-			+ " -b: crete backup file\n"
+			+ " -b: creates a backup file\n"
 			+ " -fb: force/override backup file\n"
-			+ " -rp PREFIX: indicate a prefix to be removed from properties names\n"
-			+ " PREFIX: prefix to be removed from keys\n"
-			+ " -fp PREFIX: indicate a list of prefixes to filter by\n"
-			+ " PREFIX: prefixes";
+			+ " -rp [PREFIX]: indicates a prefix to be removed from properties names\n"
+			+ "     PREFIX: prefix to be removed from keys\n"
+			+ " -fp [PREFIX]: indicates a list of prefixes to filter by\n"
+			+ "     PREFIX: comma-separated list of prefixes";
 
 	/**
 	 * Processes a comma-separated list of files and replace expressions like ${}
@@ -170,7 +173,7 @@ public class EnvVarReplacer {
 		}
 		
 		List<String> allPaths = paths != null ? new ArrayList<String>(Arrays.asList(paths)) : new ArrayList<String>();
-		if (configPaths != null) {
+		if (isSourceConfigFile && configPaths != null) {
 			Arrays.stream(configPaths).filter(EnvVarReplacer::validate).map(FilenameUtils::normalizeNoEndSeparator)
 					.filter(EnvVarReplacer::checkFile).forEach(path -> {
 						readConfigFile(path, allPaths);

@@ -42,66 +42,68 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-		    <groupId>commons-io</groupId>
-		    <artifactId>commons-io</artifactId>
-		    <version>${version.commons.io}</version>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>${version.commons.io}</version>
 		</dependency>
 		<dependency>
-		    <groupId>com.github.stefanbirkner</groupId>
-		    <artifactId>system-rules</artifactId>
-		    <version>${version.junit.systemrules}</version>
-		    <scope>test</scope>
+			<groupId>com.github.stefanbirkner</groupId>
+			<artifactId>system-rules</artifactId>
+			<version>${version.junit.systemrules}</version>
+			<scope>test</scope>
 		</dependency>
 
 	</dependencies>
 
 	<build>
-	    <plugins>
-	      <!-- any other plugins -->
-	      <plugin>
-	      	<groupId>org.apache.maven.plugins</groupId>
-	        <artifactId>maven-assembly-plugin</artifactId>
-	        <version>${maven.assembly.version}</version>
-	        <executions>
-	          <execution>
-	            <phase>package</phase>
-	            <goals>
-	              <goal>single</goal>
-	            </goals>
-	          </execution>
-	        </executions>
-	        <configuration>
-	          <descriptorRefs>
-	            <descriptorRef>jar-with-dependencies</descriptorRef>
-	          </descriptorRefs>
-	          <finalName>environment-var-replacer</finalName>
-        	  <appendAssemblyId>false</appendAssemblyId>
-			  <archive>
-				<manifest>
-					<mainClass>com.github.arielcarrera.env.var.replacer.EnvVarReplacer</mainClass>
-				</manifest>
-			  </archive>
-	        </configuration>
-	      </plugin>
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-jar-plugin</artifactId>
-            <version>${maven.jar.version}</version>
-            <configuration>
-                <archive>
-                    <manifest>
-                        <mainClass>com.github.arielcarrera.env.var.replacer.EnvVarReplacer</mainClass>
-                    </manifest>
-                </archive>
-            </configuration>
-        </plugin>
-	    </plugins>
+		<plugins>
+			<!-- any other plugins -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>${maven.assembly.version}</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+					<finalName>environment-var-replacer</finalName>
+					<appendAssemblyId>false</appendAssemblyId>
+					<archive>
+						<manifest>
+							<mainClass>com.github.arielcarrera.env.var.replacer.EnvVarReplacer</mainClass>
+							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>${maven.jar.version}</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>com.github.arielcarrera.env.var.replacer.EnvVarReplacer</mainClass>
+							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+		</plugins>
 	</build>
 	<distributionManagement>
-	   <repository>
-	     <id>github</id>
-	     <name>GitHub OWNER Apache Maven Packages</name>
-	     <url>https://maven.pkg.github.com/arielcarrera/environment-var-replacer</url>
-	   </repository>
+		<repository>
+			<id>github</id>
+			<name>GitHub OWNER Apache Maven Packages</name>
+			<url>https://maven.pkg.github.com/arielcarrera/environment-var-replacer</url>
+		</repository>
 	</distributionManagement>
 </project>
